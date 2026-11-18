@@ -27,10 +27,11 @@
             width: 100%;
         }
 
-        /* DISEÑO PARA COMPUTADOR (Pantallas grandes) */
+        /* DISEÑO PARA COMPUTADOR (Pantallas grandes - Amplio y adaptable) */
         @media (min-width: 768px) {
             .leaflet-popup-content-wrapper {
-                max-width: 450px !important;
+                max-width: 600px !important;
+                width: auto !important;
                 border-radius: 10px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             }
@@ -40,6 +41,10 @@
             }
             .popup-content table, .popup-content div {
                 font-size: 13px !important;
+            }
+            .popup-scroll-box {
+                max-height: 450px !important;
+                overflow-y: auto;
             }
             .popup-content a {
                 display: inline-block;
@@ -64,7 +69,7 @@
             }
         }
 
-        /* DISEÑO PARA CELULAR (Pantallas pequeñas, mantiene el formato que te gustaba) */
+        /* DISEÑO PARA CELULAR (Pantallas pequeñas - Mantiene el formato compacto que te gustó) */
         @media (max-width: 767px) {
             #header {
                 padding: 10px;
@@ -80,6 +85,10 @@
             }
             .popup-content table, .popup-content div {
                 font-size: 11px !important;
+            }
+            .popup-scroll-box {
+                max-height: 260px !important;
+                overflow-y: auto;
             }
             .popup-content a {
                 display: inline-block;
@@ -184,11 +193,11 @@
                             className: 'label-punto'
                         });
 
-                        // Pop-up con diseño dinámico según el dispositivo
+                        // Pop-up adaptado dinámicamente
                         var popupHTML = `
                             <div class="popup-content">
-                                <strong style="color: #2c3e50;">${name}</strong><br><br>
-                                <div style="max-height: 280px; overflow-y: auto; text-align: left; padding-right: 5px;">
+                                <strong style="color: #2c3e50; font-size: 15px;">${name}</strong><br><br>
+                                <div class="popup-scroll-box" style="text-align: left; padding-right: 5px;">
                                     ${desc}
                                 </div>
                                 <a href="${gmapsUrl}" target="_blank">Abrir en Google Maps</a>
