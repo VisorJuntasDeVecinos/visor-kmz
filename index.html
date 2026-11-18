@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Puntos KMZ</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #header {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+        #map {
+            flex-grow: 1;
+            width: 100%;
+        }
+        /* Ventana emergente más amplia y cómoda para celulares */
+        .leaflet-popup-content-wrapper {
+            max-width: 330px !important;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+        .popup-content {
+            text-align: center;
+            font-size: 13px;
+        }
+        .popup-content table, .popup-content div {
+            font-size: 12px !important;
+        }
+        .popup-content a {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .popup-content a:hover {
+            background: #2980b9;
+        }
+        .leaflet-tooltip.label-punto {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #2c3e50;
+            border-radius: 4px;
+            padding: 2px 5px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #2c3e50;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="header">
+        <h2>Visualizador de Puntos KMZ</h2>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Librerías JS necesarias -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
+
+    <script>
+        // 1. Inicializar el mapa
+        var map = L.map('map').setView([-36.8, -73.0], 8);
+
+        // Capa base segura de Esri
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri'
+        }).addTo(map);
+
+        var currentLayer = null;
+
+        // 2. Cargar el KMZ automáticamente
+        var urlKMZ = 'JuntasDeVecinos.kmz'; 
+
+        fetch(urlKMZ)
+            .then(response => {
+                if (!response.ok) throw new Error("No se pudo cargar el archivo KMZ local.");
+                return response.arrayBuffer();
+            })
+            .then(data => {
+                JSZip.loadAsync(data).then(function(zip) {
+                    var kmlName = Object.keys(zip.files).find(fn => fn.toLowerCase().endsWith('.kml'));
+                    if (!kmlName) {
+                        alert("El archivo KMZ no contiene ningún archivo KML adentro.");
+                        return;
+                    }
+                    zip.files[kmlName].async("string").then(function(kmlText) {
+                        cargarEnMapa(kmlText);
+                    });
+                });
+            })
+            .catch(err => {
+                console.log("Error al cargar el KMZ automático: " + err);
+            });
+
+        // 3. Función para procesar y dibujar los puntos
+        function cargarEnMapa(kmlText) {
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+
+            try {
+                currentLayer = omnivore.kml.parse(kmlText);
+
+                currentLayer.eachLayer(function(layer) {
+                    var props = layer.feature.properties || {};
+                    var name = props.name || 'Punto sin nombre';
+                    var desc = props.description || '';
+                    
+                    var latlng = layer.getLatLng ? layer.getLatLng() : null;
+                    if (latlng) {
+                        var lat = latlng.lat;
+                        var lng = latlng.lng;
+                        var gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+                        // Nombre permanente al lado del punto
+                        layer.bindTooltip(name, {
+                            permanent: true,
+                            direction: 'right',
+                            className: 'label-punto'
+                        });
+
+                        // Pop-up con más espacio vertical y texto legible
+                        var popupHTML = `
+                            <div class="popup-content">
+                                <strong style="font-size: 14px; color: #2c3e50;">${name}</strong><br><br>
+                                <div style="max-height: 260px; overflow-y: auto; text-align: left; padding-right: 5px;">
+                                    ${desc}
+                                </div>
+                                <a href="${gmapsUrl}" target="_blank">Abrir en Google Maps</a>
+                            </div>
+                        `;
+                        layer.bindPopup(popupHTML);
+                    }
+                });
+
+                currentLayer.addTo(map);
+                map.fitBounds(currentLayer.getBounds());
+
+            } catch (error) {
+                alert("Hubo un error al procesar las coordenadas: " + error);
+            }
+        }
+    </script>
+</body>
+</html>
