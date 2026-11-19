@@ -1,235 +1,56 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visualizador de Puntos KMZ</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        #header {
-            background: #2c3e50;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-size: 16px;
-        }
-        #map {
-            flex-grow: 1;
-            width: 100%;
-        }
-
-        /* DISEÑO PARA COMPUTADOR */
-        @media (min-width: 768px) {
-            .leaflet-popup-content-wrapper {
-                max-width: 480px !important;
-                width: 480px !important;
-                max-height: 80vh !important;
-                border-radius: 10px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            }
-            .leaflet-popup-content {
-                max-height: 65vh !important;
-                overflow-y: auto !important;
-                margin: 15px 20px !important;
-                padding-right: 5px;
-            }
-            .popup-content {
-                text-align: center;
-                font-size: 13px;
-            }
-            .popup-content table, .popup-content div {
-                font-size: 12px !important;
-            }
-            .btn-maps {
-                display: inline-block;
-                margin: 8px 0 12px 0;
-                padding: 8px 14px;
-                background: #3498db;
-                color: white;
-                text-decoration: none;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            .leaflet-tooltip.label-punto {
-                background: rgba(255, 255, 255, 0.95);
-                border: 1px solid #2c3e50;
-                border-radius: 4px;
-                padding: 4px 8px;
-                font-size: 12px;
-                font-weight: bold;
-                color: #2c3e50;
-                box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-            }
-        }
-
-        /* DISEÑO PARA CELULAR (Ajustado para que no se desborde y se adapte bien) */
-        @media (max-width: 767px) {
-            #header {
-                padding: 10px;
-                font-size: 13px;
-            }
-            .leaflet-popup-content-wrapper {
-                max-width: 90vw !important;
-                width: auto !important;
-                max-height: 75vh !important;
-                border-radius: 8px;
-            }
-            .leaflet-popup-content {
-                max-height: 65vh !important;
-                overflow-y: auto !important;
-                margin: 10px 12px !important;
-                padding-right: 4px;
-            }
-            .popup-content {
-                text-align: center;
-                font-size: 11px;
-            }
-            /* Forzar a que las tablas de la ficha se adapten al ancho del celular */
-            .popup-content table {
-                width: 100% !important;
-                font-size: 10px !important;
-            }
-            .popup-content table td, .popup-content table th {
-                padding: 3px 4px !important;
-                word-break: break-word;
-            }
-            .btn-maps {
-                display: inline-block;
-                margin: 6px 0 10px 0;
-                padding: 6px 12px;
-                background: #3498db;
-                color: white;
-                text-decoration: none;
-                border-radius: 4px;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            .leaflet-tooltip.label-punto {
-                background: rgba(255, 255, 255, 0.9);
-                border: 1px solid #2c3e50;
-                border-radius: 4px;
-                padding: 2px 5px;
-                font-size: 10px;
-                font-weight: bold;
-                color: #2c3e50;
-            }
-        }
-
-        .btn-maps:hover {
-            background: #2980b9;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#163d48">
+  <meta name="description" content="Mapa de las juntas de vecinos, las unidades vecinales y el límite comunal de Yumbel.">
+  <title>Visor de Juntas de Vecinos de Yumbel</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <div id="header">
-        <h2>Visor de Juntas de Vecinos de Yumbel</h2>
+  <header class="header">
+    <span class="brand-icon" aria-hidden="true">Y</span>
+    <div><h1>Juntas de Vecinos de Yumbel</h1><p>Visor territorial · Región del Biobío</p></div>
+    <span class="header-tag">Territorio y comunidad</span>
+  </header>
+  <main>
+    <aside id="panel" class="panel" aria-label="Capas y leyenda del mapa">
+      <div class="panel-heading"><h2>Explora el territorio</h2><button id="cerrar-panel" class="mobile-only icon-button" aria-label="Cerrar capas y leyenda">×</button></div>
+      <p class="intro">Activa las capas y sus nombres para consultar el mapa.</p>
+      <fieldset>
+        <legend>Capas del mapa</legend>
+        <label class="layer-row"><input type="checkbox" id="limite" checked disabled><span class="symbol boundary"></span><span>Límite de Yumbel</span></label>
+        <label class="layer-row"><input type="checkbox" id="unidades" checked disabled><span class="symbol units"></span><span>Unidades vecinales <small id="cantidad-unidades"></small></span></label>
+        <label class="sub-row"><input type="checkbox" id="nombres-unidades" checked disabled> Nombres de las unidades</label>
+        <div class="transparency"><label for="transparencia">Transparencia del relleno <output id="valor-transparencia" for="transparencia">50%</output></label><input id="transparencia" type="range" min="0" max="100" step="5" value="50" disabled></div>
+        <label class="layer-row"><input type="checkbox" id="juntas" checked disabled><span class="symbol point"></span><span>Juntas de vecinos <small id="cantidad-juntas"></small></span></label>
+        <label class="sub-row"><input type="checkbox" id="nombres-juntas" checked disabled> Nombres de las juntas</label>
+      </fieldset>
+      <div class="actions"><button id="ver-comuna" disabled>Ver comuna completa</button><button id="ver-juntas" class="secondary" disabled>Ver todas las juntas</button></div>
+      <label class="legend-toggle"><input type="checkbox" id="mostrar-leyenda" checked> Mostrar leyenda</label>
+      <section id="leyenda" aria-label="Leyenda">
+        <h2 class="section-title">Leyenda</h2>
+        <div class="legend-row" id="leyenda-limite"><span class="symbol boundary"></span><span>Límite comunal</span></div>
+        <div class="legend-row" id="leyenda-juntas"><span class="symbol point"></span><span>Junta de vecinos</span></div>
+        <div id="leyenda-unidades"><p class="legend-caption">Unidades vecinales <span>Selecciona una para acercarte</span></p><div id="lista-unidades" class="legend-list"></div></div>
+      </section>
+      <p class="help">Los puntos de las juntas se ven desde la vista general. Al acercarte aparecen más nombres, evitando que se superpongan. También puedes consultar cada elemento al pasar el cursor o tocarlo.</p>
+      <p id="estado" class="status" role="status">Cargando las capas del mapa…</p>
+      <div id="errores" role="alert"></div>
+      <p class="source">Capas: proyecto QGIS · Unidades vecinales, junio de 2026 · Registro de juntas del visor.</p>
+    </aside>
+    <div class="map-wrap">
+      <div id="map" aria-label="Mapa de Yumbel"></div>
+      <button id="abrir-panel" class="mobile-only map-button" aria-controls="panel" aria-expanded="false">Capas y leyenda</button>
+      <div class="map-note">Haz clic en una junta para ver su ficha</div>
     </div>
-
-    <div id="map"></div>
-
-    <!-- Librerías JS necesarias -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
-
-    <script>
-        // 1. Inicializar el mapa
-        var map = L.map('map').setView([-36.8, -73.0], 8);
-
-        // Capa base segura de Esri
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: 'Tiles &copy; Esri'
-        }).addTo(map);
-
-        var currentLayer = null;
-
-        // 2. Cargar el KMZ automáticamente
-        var urlKMZ = 'JuntasDeVecinos.kmz'; 
-
-        fetch(urlKMZ)
-            .then(response => {
-                if (!response.ok) throw new Error("No se pudo cargar el archivo KMZ local.");
-                return response.arrayBuffer();
-            })
-            .then(data => {
-                JSZip.loadAsync(data).then(function(zip) {
-                    var kmlName = Object.keys(zip.files).find(fn => fn.toLowerCase().endsWith('.kml'));
-                    if (!kmlName) {
-                        alert("El archivo KMZ no contiene ningún archivo KML adentro.");
-                        return;
-                    }
-                    zip.files[kmlName].async("string").then(function(kmlText) {
-                        cargarEnMapa(kmlText);
-                    });
-                });
-            })
-            .catch(err => {
-                console.log("Error al cargar el KMZ automático: " + err);
-            });
-
-        // 3. Función para procesar y dibujar los puntos
-        function cargarEnMapa(kmlText) {
-            if (currentLayer) {
-                map.removeLayer(currentLayer);
-            }
-
-            try {
-                currentLayer = omnivore.kml.parse(kmlText);
-
-                currentLayer.eachLayer(function(layer) {
-                    var props = layer.feature.properties || {};
-                    var name = props.name || 'Punto sin nombre';
-                    var desc = props.description || '';
-                    
-                    var latlng = layer.getLatLng ? layer.getLatLng() : null;
-                    if (latlng) {
-                        var lat = latlng.lat;
-                        var lng = latlng.lng;
-                        var gmapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-
-                        // Nombre permanente al lado del punto
-                        layer.bindTooltip(name, {
-                            permanent: true,
-                            direction: 'right',
-                            className: 'label-punto'
-                        });
-
-                        // Pop-up con el botón "Abrir en Google Maps" ubicado ARRIBA
-                        var popupHTML = `
-                            <div class="popup-content">
-                                <strong style="color: #2c3e50; font-size: 14px;">${name}</strong><br>
-                                <a href="${gmapsUrl}" target="_blank" class="btn-maps">Abrir en Google Maps</a>
-                                <div style="text-align: left;">
-                                    ${desc}
-                                </div>
-                            </div>
-                        `;
-                        
-                        layer.bindPopup(popupHTML, {
-                            maxWidth: 480
-                        });
-                    }
-                });
-
-                currentLayer.addTo(map);
-                map.fitBounds(currentLayer.getBounds());
-
-            } catch (error) {
-                alert("Hubo un error al procesar las coordenadas: " + error);
-            }
-        }
-    </script>
+  </main>
+  <noscript>Activa JavaScript para consultar el mapa interactivo.</noscript>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://api.tiles.mapbox.com/mapbox.js/plugins/leaflet-omnivore/v0.3.1/leaflet-omnivore.min.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
